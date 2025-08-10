@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BytEdge.ai - AI Agents Built for Engineers</title>
+    
+    <!-- External Resources -->
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    
+    <style>
+        :root {
+            /* Primitive Color Tokens */
+            --color-white: rgba(255, 255, 255, 1);
+            --color-black: rgba(0, 0, 0, 1);
+            --color-cream-50: rgba(252, 252, 249, 1);
+            --color-cream-100: rgba(255, 255, 253, 1);
+            --color-gray-200: rgba(245, 245, 245, 1);
+            --color-gray-300: rgba(167, 169, 169, 1);
+            --color-gray-400: rgba(119, 124, 124, 1);
+            --color-slate-500: rgba(98, 108, 113, 1);
+            --color-brown-600: rgba(94, 82, 64, 1);
+            --color-charcoal-700: rgba(31, 33, 33, 1);
+            --color-charcoal-800: rgba(38, 40, 40, 1);
+            --color-slate-900: rgba(19, 52, 59, 1);
+            --color-teal-300: rgba(50, 184, 198, 1);
+            --color-teal-400: rgba(45, 166, 178, 1);
+            --color-teal-500: rgba(33, 128, 141, 1);
+            --color-teal-600: rgba(29, 116, 128, 1);
+            --color-teal-700: rgba(26, 104, 115, 1);
+            --color-teal-800: rgba(41, 150, 161, 1);
+            --color-red-400: rgba(255, 84, 89, 1);
+            --color-red-500: rgba(192, 21, 47, 1);
+            --color-orange-400: rgba(230, 129, 97, 1);
+            --color-orange-500: rgba(168, 75, 47, 1);
+
+            /* AI Theme Colors */
+            --ai-primary: #01EFF9;
+            --ai-primary-light: #33FFFF;
+            --ai-primary-dark: #01D0FC;
+            --ai-primary-darker: #00B8EA;
+            --ai-secondary: #1a1a2e;
+            --ai-dark: #0f0f23;
+            --ai-light: #ffffff;
+            --ai-gray: #26335e;
+            --ai-accent: #f94570;
+
+            /* Gradients */
+            --ai-gradient: linear-gradient(135deg, #33FFFF, #66CCFF);
+            --ai-gradient-light: linear-gradient(135deg, #E6FFFE, #CCF5FF);
+            --ai-gradient-dark: linear-gradient(135deg, var(--ai-dark), var(--ai-secondary));
+            --ai-gradient-subtle: linear-gradient(135deg, rgba(51, 255, 255, 0.1), rgba(102, 204, 255, 0.1));
+
+            /* Effects */
+            --ai-shadow: 0 0 40px rgba(51, 255, 255, 0.2);
+            --ai-glow: 0 0 25px rgba(51, 255, 255, 0.3);
+            --ai-shadow-subtle: 0 4px 20px rgba(51, 255, 255, 0.1);
+
+            /* Animations */
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            --transition-fast: all 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--ai-light);
+            background: var(--ai-dark);
+            overflow-x: hidden;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--ai-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 1;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(51, 255, 255, 0.2);
+            border-top: 3px solid var(--ai-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Custom Cursor */
+        .cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            background: var(--ai-primary);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.1s ease;
+            box-shadow: var(--ai-glow);
+            mix-blend-mode: difference;
+        }
+
+        .cursor-trail {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background: rgba(51, 255, 255, 0.6);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9998;
+            transition: all 0.3s ease;
+        }
+
+        .cursor.hover {
+            transform: scale(1.5);
+            background: var(--ai-primary-dark);
+        }
+
+        /* Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: transparent;
+            backdrop-filter: blur(5px);
+            /* -webkit-backdrop-filter: blur(20px); */
+            z-index: 1000;
+            padding: 1rem 0;
+            transition: var(--transition-smooth);
+            border-bottom-style: var(--ai-dark);
+        }
+
+        .navbar.scrolled {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(30px);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-brand .brand-logo {
+            height: 45px;
+            width: auto;
+            transition: var(--transition-smooth);
+            filter: brightness(1.2);
+        }
+
+        .nav-brand .brand-logo:hover {
+            filter: brightness(1.4) drop-shadow(0 0 10px rgba(51, 255, 255, 0.3));
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--ai-light);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition-smooth);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: var(--ai-primary);
+            background: rgba(51, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Enhanced Hero Section */
+        .hero {
+            height: 100vh;
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: var(--ai-gradient-dark);
+            overflow: hidden;
+        }
+
+        .hero-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1;
+        }
+
+        .floating-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+        }
+
+        .shape {
+            position: absolute;
+            border: 2px solid rgba(51, 255, 255, 0.4);
+            border-radius: 12px;
+            animation: gentleFloat 8s ease-in-out infinite;
+        }
+
+        @keyframes gentleFloat {
+            0%, 100% { 
+                transform: translateY(0) rotate(0deg); 
+                opacity: 0.6;
+            }
+            50% { 
+                transform: translateY(-20px) rotate(180deg); 
+                opacity: 1;
+            }
+        }
+
+        .shape-1 { width: 60px; height: 60px; top: 20%; left: 10%; animation-delay: 0s; }
+        .shape-2 { width: 80px; height: 80px; top: 60%; right: 15%; animation-delay: -2s; border-radius: 50%; }
+        .shape-3 { width: 40px; height: 40px; top: 30%; right: 30%; animation-delay: -4s; }
+        .shape-4 { width: 100px; height: 100px; bottom: 20%; left: 20%; animation-delay: -1s; border-radius: 20px; }
+        .shape-5 { width: 70px; height: 70px; top: 10%; left: 60%; animation-delay: -3s; border-radius: 50%; }
+
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 60px 60px;
+            animation: gridMove 30s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(60px, 60px); }
+        }
+
+        /* Enhanced Hero Content Layout */
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            display: grid;
+            grid-template-columns: 1.8fr 1.2fr; /* Broader text container, more space for model on right */
+            gap: 2rem;
+            align-items: center;
+            max-width: 100vvw; /* Increased max width */
+            margin: 0 auto;
+            padding: 0 2rem;
+            width: 100%;
+        }
+
+        .hero-text {
+            max-width: 100vw; 
+            padding-right: 2rem;
+        }
+
+        /* Bigger Hero Title */
+        .hero-title {
+            font-size: clamp(1.4rem, 6vw, 4rem); /* Significantly bigger */
+            font-weight: 800; /* Bolder */
+            margin-bottom: 1.7rem;
+            color: var(--ai-light);
+            line-height: 1.1; /* Tighter line height for bigger text */
+            letter-spacing: -0.05em; /* Slightly tighter letter spacing */
+        }
+
+        .highlight {
+            background: var(--ai-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.3rem; /* Slightly bigger subtitle too */
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+            max-width: 100vw; 
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        /* 3D Model positioned more to the right */
+        .hero-3d {
+            position: relative;
+            height: 70vh;
+            max-height: 600px;
+            margin-left: auto; /* Push to right */
+            width: 100%;
+        }
+
+        #hero-model {
+            width: 100%;
+            height: 100%;
+            border-radius: 20px;
+            --poster-color: transparent;
+        }
+
+        /* Button Styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            position: relative;
+            overflow: hidden;
+            font-family: inherit;
+        }
+
+        .btn--primary {
+            background: var(--ai-gradient);
+            color: var(--ai-dark);
+            box-shadow: var(--ai-glow);
+        }
+
+        .btn--primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 40px rgba(51, 255, 255, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .btn--outline {
+            background: transparent;
+            border: 2px solid var(--ai-primary);
+            color: var(--ai-primary);
+        }
+
+        .btn--outline:hover {
+            background: var(--ai-primary);
+            color: var(--ai-dark);
+            box-shadow: var(--ai-glow);
+            transform: translateY(-3px);
+        }
+
+        /* Stats Section */
+        .stats {
+            padding: 4rem 0;
+            background: var(--ai-secondary);
+            border-top: 1px solid rgba(51, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(51, 255, 255, 0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            text-align: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .stat-item {
+            background: rgba(51, 255, 255, 0.08);
+            padding: 2rem 1.5rem;
+            border-radius: 1.5rem;
+            border: 1px solid rgba(51, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            transition: var(--transition-smooth);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-item:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--ai-shadow-subtle);
+            border-color: var(--ai-primary);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--ai-primary);
+            margin-bottom: 0.5rem;
+            line-height: 1;
+        }
+
+        .stat-label {
+            color: var(--ai-light);
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        /* Value Props Section */
+        .value-props {
+            padding: 6rem 0;
+            background: var(--ai-gradient-subtle);
+        }
+
+        .value-props-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 3rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .value-prop-item {
+            text-align: center;
+            padding: 2.5rem;
+            background: rgba(51, 255, 255, 0.05);
+            border-radius: 2rem;
+            border: 1px solid rgba(51, 255, 255, 0.1);
+            transition: var(--transition-smooth);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .value-prop-item:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--ai-shadow);
+            border-color: var(--ai-primary);
+        }
+
+        .value-prop-icon {
+            margin-bottom: 2rem;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .icon-professional {
+            width: 80px;
+            height: 80px;
+            background: var(--ai-gradient);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            transition: var(--transition-smooth);
+        }
+
+        .icon-professional:hover {
+            transform: scale(1.1);
+            box-shadow: var(--ai-glow);
+            filter: brightness(1.2);
+        }
+
+        /* Platform Section */
+        .platform {
+            padding: 6rem 0;
+            background: var(--ai-dark);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .platform-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(51, 255, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(102, 204, 255, 0.08) 0%, transparent 50%);
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .section-header h2 {
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            color: var(--ai-light);
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .section-header p {
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.7;
+        }
+
+        /* Platform Grid */
+        .platform-grid-2x2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 3rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .platform-card {
+            background: rgba(51, 255, 255, 0.05);
+            border: 1px solid rgba(51, 255, 255, 0.15);
+            border-radius: 2rem;
+            padding: 3rem;
+            text-align: center;
+            position: relative;
+            transition: var(--transition-smooth);
+            overflow: hidden;
+        }
+
+        .platform-card:hover {
+            transform: translateY(-15px);
+            box-shadow: var(--ai-shadow);
+            border-color: var(--ai-primary);
+        }
+
+        .card-icon {
+            margin-bottom: 2rem;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+        }
+
+        .platform-card h3 {
+            color: var(--ai-primary);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .platform-card p {
+            color: rgba(255, 255, 255, 0.85);
+            line-height: 1.7;
+            font-size: 1.1rem;
+        }
+
+        /* Solutions Carousel */
+        .solutions {
+            padding: 6rem 0;
+            background: var(--ai-secondary);
+        }
+
+        .carousel-container {
+            position: relative;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .carousel {
+            background: rgba(51, 255, 255, 0.05);
+            border: 1px solid rgba(51, 255, 255, 0.15);
+            border-radius: 2rem;
+            padding: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .carousel-track {
+            display: flex;
+            transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .carousel-slide {
+            min-width: 100%;
+            text-align: center;
+        }
+
+        .carousel-slide h3 {
+            color: var(--ai-primary);
+            margin-bottom: 2rem;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        .carousel-slide p {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 1.2rem;
+            line-height: 1.7;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .carousel-controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .carousel-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(51, 255, 255, 0.3);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .carousel-dot.active {
+            background: var(--ai-primary);
+            transform: scale(1.2);
+        }
+
+        /* Industries Section */
+        .industries {
+            padding: 6rem 0;
+            background: var(--ai-dark);
+        }
+
+        .industries-grid-2x2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 3rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .industry-card {
+            background: rgba(51, 255, 255, 0.05);
+            border: 1px solid rgba(51, 255, 255, 0.15);
+            border-radius: 2rem;
+            padding: 2.5rem;
+            text-align: center;
+            transition: var(--transition-smooth);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .industry-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--ai-shadow);
+            border-color: var(--ai-primary);
+        }
+
+        .industry-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 2rem;
+            background: var(--ai-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            transition: var(--transition-smooth);
+        }
+
+        .industry-icon:hover {
+            transform: scale(1.1);
+            box-shadow: var(--ai-glow);
+        }
+
+        .industry-card h3 {
+            color: var(--ai-primary);
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .industry-card p {
+            color: rgba(255, 255, 255, 0.85);
+            line-height: 1.6;
+        }
+
+        /* Enhanced Chatbot Styles - Bottom Right with 3D Model */
+        .chatbot-launcher {
+            position: fixed;
+            bottom: 20px;
+            right: 20px; /* Changed from left to right */
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            animation: pulseBot 2s ease-in-out infinite;
+            transition: var(--transition-smooth);
+        }
+
+        @keyframes pulseBot {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+
+        /* 3D Chatbot Model Container */
+        .chatbot-3d-container {
+            width: 70px;
+            height: 70px;
+            position: relative;
+            border-radius: 50%;
+            background: var(--ai-gradient);
+            box-shadow: var(--ai-glow);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 3D Chatbot Model */
+        #chatbot-model {
+            width: 100%;
+            height: 100%;
+            --poster-color: transparent;
+        }
+
+        /* Fallback Icon if 3D model fails */
+        .chatbot-fallback-icon {
+            font-size: 1.8rem;
+            color: var(--ai-dark);
+            display: none; /* Hidden by default, shown if 3D model fails */
+        }
+
+        .chatbot-bubble {
+            background: var(--ai-primary);
+            color: var(--ai-dark);
+            padding: 12px 16px;
+            border-radius: 20px 20px 5px 20px; /* Speech bubble style */
+            font-size: 14px;
+            font-weight: 600;
+            max-width: 180px;
+            box-shadow: 0 4px 15px rgba(51, 255, 255, 0.3);
+            position: relative;
+        }
+
+        /* Speech bubble tail */
+        .chatbot-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            right: 20px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid var(--ai-primary);
+        }
+
+        /* Chatbot Panel - Positioned from bottom-right */
+        .chatbot-panel {
+            position: fixed;
+            bottom: 110px;
+            right: 20px; /* Changed from left to right */
+            width: 380px;
+            height: 520px;
+            background: var(--ai-secondary);
+            border: 1px solid rgba(51, 255, 255, 0.3);
+            border-radius: 20px;
+            display: none;
+            flex-direction: column;
+            box-shadow: var(--ai-shadow);
+            z-index: 1001;
+        }
+
+        .chatbot-header {
+            background: var(--ai-gradient);
+            color: var(--ai-dark);
+            padding: 16px 20px;
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chatbot-header h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .chatbot-close {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: var(--ai-dark);
+            line-height: 1;
+            padding: 4px;
+            border-radius: 4px;
+            transition: var(--transition-fast);
+        }
+
+        .chatbot-close:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .chatbot-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            line-height: 1.4;
+            font-size: 14px;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: var(--ai-primary);
+            color: var(--ai-dark);
+            border-radius: 16px 16px 4px 16px;
+        }
+
+        .message.bot {
+            align-self: flex-start;
+            background: rgba(51, 255, 255, 0.1);
+            color: var(--ai-light);
+            border-radius: 16px 16px 16px 4px;
+            border: 1px solid rgba(51, 255, 255, 0.2);
+        }
+
+        .chatbot-input {
+            padding: 16px 20px;
+            border-top: 1px solid rgba(51, 255, 255, 0.2);
+            display: flex;
+            gap: 12px;
+        }
+
+        .chatbot-input input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid rgba(51, 255, 255, 0.3);
+            border-radius: 20px;
+            background: var(--ai-dark);
+            color: var(--ai-light);
+            outline: none;
+            font-size: 14px;
+        }
+
+        .chatbot-input input:focus {
+            border-color: var(--ai-primary);
+            box-shadow: 0 0 0 2px rgba(51, 255, 255, 0.2);
+        }
+
+        .chatbot-input button {
+            background: var(--ai-primary);
+            color: var(--ai-dark);
+            border: none;
+            padding: 12px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition-smooth);
+        }
+
+        .chatbot-input button:hover {
+            background: var(--ai-primary-light);
+            transform: translateY(-1px);
+        }
+
+        /* Hide chatbot launcher when panel is open */
+        .chatbot-launcher.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.8);
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: var(--ai-secondary);
+            border: 1px solid rgba(51, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            color: var(--ai-primary);
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--ai-light);
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--ai-light);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(51, 255, 255, 0.3);
+            border-radius: 10px;
+            background: var(--ai-dark);
+            color: var(--ai-light);
+            outline: none;
+            transition: var(--transition-smooth);
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: var(--ai-primary);
+            box-shadow: 0 0 0 2px rgba(51, 255, 255, 0.2);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--ai-secondary);
+            padding: 4rem 0 2rem;
+            border-top: 1px solid rgba(51, 255, 255, 0.15);
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 4rem;
+            margin-bottom: 3rem;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 0 2rem;
+        }
+
+        .footer-brand {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .footer-logo {
+            height: 40px;
+            width: auto;
+            margin-bottom: 1.5rem;
+            filter: brightness(1.2);
+        }
+
+        .footer-description {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .footer-sections {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .footer-section h4 {
+            color: var(--ai-primary);
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section li {
+            margin-bottom: 0.8rem;
+        }
+
+        .footer-section a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: var(--transition-smooth);
+            font-size: 0.95rem;
+        }
+
+        .footer-section a:hover {
+            color: var(--ai-primary);
+            transform: translateX(5px);
+        }
+
+        .office-item {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: rgba(51, 255, 255, 0.03);
+            border-radius: 0.5rem;
+            border-left: 3px solid var(--ai-primary);
+            transition: var(--transition-smooth);
+        }
+
+        .office-item:hover {
+            background: rgba(51, 255, 255, 0.08);
+            transform: translateX(5px);
+        }
+
+        .office-item h5 {
+            color: var(--ai-light);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .office-item p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .office-item .phone {
+            color: var(--ai-primary);
+            font-weight: 500;
+            margin-top: 0.3rem;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(51, 255, 255, 0.1);
+        }
+
+        .copyright {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+
+        /* Animations */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .animate-on-scroll.animate {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .platform-grid-2x2,
+            .industries-grid-2x2 {
+                grid-template-columns: 1fr;
+                max-width: 600px;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+            }
+
+            .footer-sections {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .hero-content {
+                grid-template-columns: 1fr; /* Stack on tablets */
+                gap: 2rem;
+                text-align: center;
+            }
+
+            .hero-text {
+                padding-right: 0;
+            }
+
+            .hero-3d {
+                height: 50vh;
+                max-height: 400px;
+                margin-left: 0;
+            }
+
+            /* Adjust chatbot position for tablets */
+            .chatbot-panel {
+                width: 350px;
+                height: 480px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+                text-align: center;
+            }
+
+            .hero-title {
+                font-size: clamp(2.5rem, 8vw, 4rem); /* Responsive for mobile */
+            }
+
+            .hero-3d {
+                height: 40vh;
+                max-height: 350px;
+            }
+
+            .nav-menu {
+                display: none;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+            }
+
+            .value-props-grid {
+                grid-template-columns: 1fr;
+                padding: 0 1rem;
+            }
+
+            .platform-card,
+            .industry-card {
+                padding: 2rem;
+            }
+
+            .footer-sections {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            /* Mobile chatbot adjustments */
+            .chatbot-panel {
+                width: calc(100vw - 40px);
+                height: 60vh;
+                left: 20px;
+                right: 20px;
+            }
+
+            .chatbot-bubble {
+                max-width: 150px;
+                font-size: 12px;
+            }
+
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-cta .btn {
+                width: 100%;
+            }
+
+            .value-prop-item,
+            .platform-card,
+            .industry-card {
+                padding: 1.5rem;
+            }
+
+            .hero-title {
+                font-size: clamp(2rem, 10vw, 3rem);
+            }
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Custom Cursor -->
+    <div class="cursor" id="cursor"></div>
+    <div class="cursor-trail" id="cursorTrail"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <img src="https://bytedge.ai/wp-content/uploads/2021/04/logo-dark.svg" alt="BytEdge" class="brand-logo">
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#platform" class="nav-link">Platform</a></li>
+                <li><a href="#solutions" class="nav-link">Solutions</a></li>
+                <li><a href="#industries" class="nav-link">Industries</a></li>
+                <li><button class="btn btn--primary" id="bookPilotBtn">Book My Pilot</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Enhanced Hero Section -->
+    <section class="hero">
+        <div class="hero-bg">
+            <div class="floating-shapes">
+                <div class="shape shape-1"></div>
+                <div class="shape shape-2"></div>
+                <div class="shape shape-3"></div>
+                <div class="shape shape-4"></div>
+                <div class="shape shape-5"></div>
+            </div>
+            <div class="grid-overlay"></div>
+        </div>
+        
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1 class="hero-title">
+                    Autonomous AI Agents. <span class="highlight">Engineered for Innovation.</span>
+                </h1>
+                <p class="hero-subtitle">
+                    BytEdge delivers production-ready AI agents for engineering and operational teams across CPG, mobility, energy, and manufacturing. Built on a modular AI platform, our agents automate critical processes — from ingestion to prediction — in just 2–4 weeks.
+                </p>
+                <div class="hero-cta">
+                    <button class="btn btn--primary">Request a Platform Demo</button>
+                    <a href="#solutions" class="btn btn--outline">See Our Solutions</a>
+                </div>
+            </div>
+            
+            <div class="hero-3d">
+                <!-- 3D Model - Replace with your actual model URL or local file -->
+                <model-viewer  
+                    disable-tap 
+                    disable-zoom 
+                    autoplay
+                    ar 
+                    ar-modes="webxr scene-viewer"
+                    id="hero-model"
+                    src="assets/robot_playground.glb"
+                    alt="BytEdge AI Platform"
+                    auto-rotate
+                </model-viewer>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="stats-grid">
+            <div class="stat-item animate-on-scroll">
+                <div class="stat-number" data-count="6">0</div>
+                <div class="stat-label">TB+ Data</div>
+            </div>
+            <div class="stat-item animate-on-scroll">
+                <div class="stat-number" data-count="4">0</div>
+                <div class="stat-label">B+ Miles</div>
+            </div>
+            <div class="stat-item animate-on-scroll">
+                <div class="stat-number" data-count="30">0</div>
+                <div class="stat-label">K+ Assets</div>
+            </div>
+            <div class="stat-item animate-on-scroll">
+                <div class="stat-number" data-count="92">0</div>
+                <div class="stat-label">% RUL Accuracy</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Value Props Section -->
+    <section class="value-props">
+        <div class="container">
+            <div class="section-header">
+                <h2>Precision-built for industries where data, physics, and process reliability matter</h2>
+            </div>
+            <div class="value-props-grid">
+                <div class="value-prop-item animate-on-scroll">
+                    <div class="value-prop-icon">
+                        <div class="icon-professional">⚙️</div>
+                    </div>
+                    <h3>Engineer-Grade</h3>
+                    <p>Built by engineers, for engineers. Our AI understands physics, process constraints, and operational realities.</p>
+                </div>
+                <div class="value-prop-item animate-on-scroll">
+                    <div class="value-prop-icon">
+                        <div class="icon-professional">⚡</div>
+                    </div>
+                    <h3>Lightning Fast</h3>
+                    <p>Deploy production-ready AI agents in 2-4 weeks, not months. See measurable ROI from day one.</p>
+                </div>
+                <div class="value-prop-item animate-on-scroll">
+                    <div class="value-prop-icon">
+                        <div class="icon-professional">🏗️</div>
+                    </div>
+                    <h3>Platform Approach</h3>
+                    <p>Modular, scalable platform that grows with your needs. One platform, infinite possibilities.</p>
+                </div>
+                <div class="value-prop-item animate-on-scroll">
+                    <div class="value-prop-icon">
+                        <div class="icon-professional">🔒</div>
+                    </div>
+                    <h3>Enterprise Secure</h3>
+                    <p>Built for mission-critical environments with enterprise-grade security and compliance.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Platform Section -->
+    <section class="platform" id="platform">
+        <div class="platform-bg"></div>
+        <div class="container">
+            <div class="section-header">
+                <h2>Powered by RealEdge, PredictEdge, and DesignEdge</h2>
+                <p>BytEdge is not a tool—it's a full-stack platform that builds, trains, and deploys vertical-specific AI agents that can predict, automate, and optimize mission-critical operations.</p>
+            </div>
+            <div class="platform-grid-2x2">
+                <div class="platform-card animate-on-scroll">
+                    <div class="card-icon">🔗</div>
+                    <h3>RealEdge Connect</h3>
+                    <p>No-code data ingestion across 1000+ industrial protocols, APIs, and legacy systems</p>
+                </div>
+                <div class="platform-card animate-on-scroll">
+                    <div class="card-icon">🧠</div>
+                    <h3>PredictEdge Core</h3>
+                    <p>AI modeling engine for predictive maintenance, asset health, optimization, and intelligent alerts</p>
+                </div>
+                <div class="platform-card animate-on-scroll">
+                    <div class="card-icon">🎯</div>
+                    <h3>DesignEdge Studio</h3>
+                    <p>Virtual workspace for digital twins, RUL modeling, and simulation-driven design decisions</p>
+                </div>
+                <div class="platform-card animate-on-scroll">
+                    <div class="card-icon">🤖</div>
+                    <h3>AgenticAI Engine</h3>
+                    <p>Rapid-deployment framework for AI copilots, agents, and bots tailored to your process logic</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solutions Carousel -->
+    <section class="solutions" id="solutions">
+        <div class="container">
+            <div class="section-header">
+                <h2>Proven Solutions</h2>
+            </div>
+            <div class="carousel-container">
+                <div class="carousel">
+                    <div class="carousel-track" id="carouselTrack">
+                        <div class="carousel-slide">
+                            <h3>Predictive Maintenance</h3>
+                            <p>Reduced fleet breakdowns by <strong>32%</strong>, saved <strong>₹48 Cr</strong> over 2 years, improved asset uptime by <strong>21%</strong></p>
+                        </div>
+                        <div class="carousel-slide">
+                            <h3>Design Optimization</h3>
+                            <p>Cut design cycle by <strong>40%</strong> for an OEM brake system, improved RUL prediction accuracy to <strong>92%</strong></p>
+                        </div>
+                        <div class="carousel-slide">
+                            <h3>Process Efficiency</h3>
+                            <p>Boosted packaging line efficiency by <strong>28%</strong>, reducing waste by <strong>₹1.2 Cr</strong> annually</p>
+                        </div>
+                    </div>
+                    <div class="carousel-controls">
+                        <div class="carousel-dot active" data-slide="0"></div>
+                        <div class="carousel-dot" data-slide="1"></div>
+                        <div class="carousel-dot" data-slide="2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Industries Section -->
+    <section class="industries" id="industries">
+        <div class="container">
+            <div class="section-header">
+                <h2>Industries We Serve</h2>
+            </div>
+            <div class="industries-grid-2x2">
+                <div class="industry-card animate-on-scroll">
+                    <div class="industry-icon">🚗</div>
+                    <h3>Mobility</h3>
+                    <p>EV battery SoC drift prediction, route failure co-pilots</p>
+                </div>
+                <div class="industry-card animate-on-scroll">
+                    <div class="industry-icon">🏭</div>
+                    <h3>Manufacturing</h3>
+                    <p>Downtime prevention, process anomaly detection</p>
+                </div>
+                <div class="industry-card animate-on-scroll">
+                    <div class="industry-icon">📦</div>
+                    <h3>CPG</h3>
+                    <p>Packaging QC agents, bottling line optimization</p>
+                </div>
+                <div class="industry-card animate-on-scroll">
+                    <div class="industry-icon">⚡</div>
+                    <h3>Energy</h3>
+                    <p>Load forecasting agents, asset maintenance copilots</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <img src="https://bytedge.ai/wp-content/uploads/2021/04/logo-dark.svg" alt="BytEdge" class="footer-logo">
+                <p class="footer-description">
+                    We engineer AI for mission-critical operations. Get started with a 2-week pilot and see measurable value — fast.
+                </p>
+            </div>
+            
+            <div class="footer-sections">
+                <div class="footer-section">
+                    <h4>Industries</h4>
+                    <ul>
+                        <li><a href="#industries">Mobility</a></li>
+                        <li><a href="#industries">Manufacturing</a></li>
+                        <li><a href="#industries">CPG</a></li>
+                        <li><a href="#industries">Energy</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Products</h4>
+                    <ul>
+                        <li><a href="#platform">RealEdge</a></li>
+                        <li><a href="#platform">PredictEdge</a></li>
+                        <li><a href="#platform">DesignEdge</a></li>
+                        <li><a href="#platform">AgenticAI</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <div class="office-item">
+                        <h5>USA Office</h5>
+                        <p>123 Tech Street<br>San Francisco, CA 94105</p>
+                        <p class="phone">+1 (555) 123-4567</p>
+                    </div>
+                    <div class="office-item">
+                        <h5>Delhi Office</h5>
+                        <p>Chiranjiv Tower<br>Nehru Place, New Delhi</p>
+                        <p class="phone">+91 11 4567 8900</p>
+                    </div>
+                    <div class="office-item">
+                        <h5>Pune Office</h5>
+                        <p>Tech Park<br>Hinjewadi, Pune</p>
+                        <p class="phone">+91 20 6789 0123</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <div class="container">
+                <p class="copyright">&copy; 2024 BytEdge.ai. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Enhanced Chatbot with 3D Model - Bottom Right -->
+    <div class="chatbot-launcher" id="chatbotLauncher">
+        <div class="chatbot-bubble">Hi! I'm Byte. Need help?</div>
+        <div class="chatbot-3d-container">
+            <!-- 3D Chatbot Model - Replace with your downloaded chatbot model -->
+            <model-viewer
+                id="chatbot-model"
+                src="assets/"
+                alt="Byte Chatbot"
+                auto-rotate
+                rotation-per-second="45deg"
+                auto-rotate-delay="1000"
+                interaction-prompt="none"
+                camera-orbit="0deg 75deg 1.5m"
+                field-of-view="30deg">
+            </model-viewer>
+            <!-- Fallback icon if 3D model fails to load -->
+            <div class="chatbot-fallback-icon">🤖</div>
+        </div>
+    </div>
+
+    <div class="chatbot-panel" id="chatbotPanel">
+        <div class="chatbot-header">
+            <h3>Byte - BytEdge Assistant</h3>
+            <button class="chatbot-close" id="chatbotClose">&times;</button>
+        </div>
+        <div class="chatbot-messages" id="chatbotMessages">
+            <div class="message bot">Hello! I'm Byte, your BytEdge AI assistant. I can help you learn about our platform, solutions, and book a pilot. What would you like to know?</div>
+        </div>
+        <div class="chatbot-input">
+            <input type="text" id="chatbotInput" placeholder="Ask me anything about BytEdge...">
+            <button id="chatbotSend">Send</button>
+        </div>
+    </div>
+
+    <!-- Book Pilot Modal -->
+    <div class="modal" id="bookPilotModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Book My Pilot</h3>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <form id="pilotForm">
+                <div class="form-group">
+                    <label for="name">Name *</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="company">Company *</label>
+                    <input type="text" id="company" name="company" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email *</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone</label>
+                    <input type="tel" id="phone" name="phone">
+                </div>
+                <div class="form-group">
+                    <label for="message">Tell us about your use case *</label>
+                    <textarea id="message" name="message" rows="4" required></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn--outline" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="btn btn--primary">Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // GSAP Configuration
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Global State
+        const state = {
+            mouseX: 0,
+            mouseY: 0,
+            cursorX: 0,
+            cursorY: 0,
+            trailX: 0,
+            trailY: 0,
+            currentSlide: 0,
+            isScrolling: false,
+            chatbotOpen: false
+        };
+
+        // BytEdge Knowledge Base for Chatbot
+        const BYTEEDGE_KB = {
+            platform: {
+                realedge: "RealEdge Connect provides no-code data ingestion across 1000+ industrial protocols, APIs, and legacy systems.",
+                predictedge: "PredictEdge Core is our AI modeling engine for predictive maintenance, asset health, optimization, and intelligent alerts.",
+                designedge: "DesignEdge Studio is a virtual workspace for digital twins, RUL modeling, and simulation-driven design decisions.",
+                agenticai: "AgenticAI Engine enables rapid deployment of conversational AI agents and copilots tailored to your process logic."
+            },
+            industries: {
+                mobility: "For mobility companies, we provide EV battery SoC drift prediction, route failure co-pilots, and predictive maintenance.",
+                manufacturing: "In manufacturing, we focus on downtime prevention, process anomaly detection, and optimizing production lines.",
+                cpg: "For CPG companies, we offer packaging QC agents, bottling line optimization, and quality control automation.",
+                energy: "In energy sector, we provide load forecasting agents, asset maintenance copilots, and grid optimization solutions."
+            },
+            solutions: [
+                "Predictive Maintenance: Reduced breakdowns by 32%, saved ₹48Cr over 2 years",
+                "Design Optimization: Cut design cycle by 40% for OEM brake systems, 92% RUL accuracy",
+                "Process Efficiency: Boosted packaging line efficiency by 28%, saving ₹1.2Cr annually"
+            ]
+        };
+
+        // Initialize everything when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hide loading overlay quickly
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            }, 500);
+
+            initCustomCursor();
+            initNavigation();
+            initHeroAnimations();
+            initStatsCounter();
+            initCarousel();
+            initScrollAnimations();
+            initChatbot();
+            initModal();
+            init3DChatbotModel();
+        });
+
+        // Custom Cursor System
+        function initCustomCursor() {
+            const cursor = document.getElementById('cursor');
+            const trail = document.getElementById('cursorTrail');
+            
+            if ('ontouchstart' in window) {
+                cursor.style.display = 'none';
+                trail.style.display = 'none';
+                return;
+            }
+
+            document.addEventListener('mousemove', (e) => {
+                state.mouseX = e.clientX;
+                state.mouseY = e.clientY;
+            });
+
+            // Hover effects
+            const hoverElements = document.querySelectorAll('a, button, .platform-card, .value-prop-item, .industry-card, .chatbot-launcher');
+            hoverElements.forEach(el => {
+                el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+                el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+            });
+
+            animateCursor();
+        }
+
+        function animateCursor() {
+            // Smooth cursor movement
+            state.cursorX += (state.mouseX - state.cursorX) * 0.2;
+            state.cursorY += (state.mouseY - state.cursorY) * 0.2;
+            
+            // Trail follows cursor with delay
+            state.trailX += (state.cursorX - state.trailX) * 0.1;
+            state.trailY += (state.cursorY - state.trailY) * 0.1;
+
+            const cursor = document.getElementById('cursor');
+            const trail = document.getElementById('cursorTrail');
+            
+            if (cursor) cursor.style.transform = `translate3d(${state.cursorX}px, ${state.cursorY}px, 0)`;
+            if (trail) trail.style.transform = `translate3d(${state.trailX}px, ${state.trailY}px, 0)`;
+
+            requestAnimationFrame(animateCursor);
+        }
+
+        // Navigation
+        function initNavigation() {
+            const navbar = document.getElementById('navbar');
+            
+            window.addEventListener('scroll', throttle(() => {
+                if (window.scrollY > 100) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            }, 16));
+
+            // Smooth scroll for nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    const href = link.getAttribute('href');
+                    if (href && href.startsWith('#')) {
+                        e.preventDefault();
+                        const target = document.querySelector(href);
+                        if (target) {
+                            target.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+                        }
+                    }
+                });
+            });
+        }
+
+        // Hero Animations
+        function initHeroAnimations() {
+            gsap.from('.hero-text > *', {
+                y: 30,
+                opacity: 0,
+                duration: 0.8,
+                stagger: 0.1,
+                ease: 'power2.out'
+            });
+
+            gsap.from('.hero-3d', {
+                x: 50,
+                opacity: 0,
+                duration: 1,
+                delay: 0.3,
+                ease: 'power2.out'
+            });
+        }
+
+        // Stats Counter
+        function initStatsCounter() {
+            const statNumbers = document.querySelectorAll('.stat-number');
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !entry.target.classList.contains('counted')) {
+                        entry.target.classList.add('counted');
+                        animateCounter(entry.target);
+                    }
+                });
+            }, { threshold: 0.5 });
+
+            statNumbers.forEach(stat => observer.observe(stat));
+        }
+
+        function animateCounter(element) {
+            const target = parseInt(element.dataset.count);
+            const duration = 2000;
+            const increment = target / (duration / 16);
+            let current = 0;
+
+            const updateCounter = () => {
+                current += increment;
+                if (current < target) {
+                    element.textContent = Math.floor(current);
+                    requestAnimationFrame(updateCounter);
+                } else {
+                    element.textContent = target;
+                }
+            };
+
+            updateCounter();
+        }
+
+        // Carousel
+        function initCarousel() {
+            const track = document.getElementById('carouselTrack');
+            const dots = document.querySelectorAll('.carousel-dot');
+            const slides = document.querySelectorAll('.carousel-slide');
+            
+            let currentSlide = 0;
+            const totalSlides = slides.length;
+
+            function goToSlide(index) {
+                currentSlide = index;
+                const translateX = -currentSlide * 100;
+                
+                gsap.to(track, {
+                    x: `${translateX}%`,
+                    duration: 0.8,
+                    ease: 'power2.inOut'
+                });
+
+                dots.forEach((dot, i) => {
+                    dot.classList.toggle('active', i === currentSlide);
+                });
+            }
+
+            function nextSlide() {
+                goToSlide((currentSlide + 1) % totalSlides);
+            }
+
+            // Dot navigation
+            dots.forEach((dot, index) => {
+                dot.addEventListener('click', () => goToSlide(index));
+            });
+
+            // Auto-advance carousel
+            setInterval(nextSlide, 5000);
+        }
+
+        // Scroll Animations
+        function initScrollAnimations() {
+            const animateElements = document.querySelectorAll('.animate-on-scroll');
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate');
+                    }
+                });
+            }, {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            });
+
+            animateElements.forEach(el => observer.observe(el));
+        }
+
+        // 3D Chatbot Model Initialization
+        function init3DChatbotModel() {
+            const chatbotModel = document.getElementById('chatbot-model');
+            const fallbackIcon = document.querySelector('.chatbot-fallback-icon');
+            
+            // Show fallback if model fails to load
+            chatbotModel.addEventListener('error', () => {
+                chatbotModel.style.display = 'none';
+                fallbackIcon.style.display = 'flex';
+            });
+
+            // Hide fallback if model loads successfully
+            chatbotModel.addEventListener('load', () => {
+                fallbackIcon.style.display = 'none';
+            });
+        }
+
+        // Enhanced Chatbot System
+        function initChatbot() {
+            const launcher = document.getElementById('chatbotLauncher');
+            const panel = document.getElementById('chatbotPanel');
+            const closeBtn = document.getElementById('chatbotClose');
+            const input = document.getElementById('chatbotInput');
+            const sendBtn = document.getElementById('chatbotSend');
+            const messages = document.getElementById('chatbotMessages');
+
+            launcher.addEventListener('click', () => {
+                openChatbot();
+            });
+
+            closeBtn.addEventListener('click', () => {
+                closeChatbot();
+            });
+
+            function openChatbot() {
+                state.chatbotOpen = true;
+                panel.style.display = 'flex';
+                launcher.classList.add('hidden'); // Hide launcher when panel opens
+                
+                gsap.fromTo(panel, 
+                    { y: 20, opacity: 0 },
+                    { y: 0, opacity: 1, duration: 0.3 }
+                );
+            }
+
+            function closeChatbot() {
+                state.chatbotOpen = false;
+                
+                gsap.to(panel, {
+                    y: 20,
+                    opacity: 0,
+                    duration: 0.3,
+                    onComplete: () => {
+                        panel.style.display = 'none';
+                        launcher.classList.remove('hidden'); // Show launcher when panel closes
+                    }
+                });
+            }
+
+            function addMessage(text, isUser = false) {
+                const message = document.createElement('div');
+                message.className = `message ${isUser ? 'user' : 'bot'}`;
+                message.textContent = text;
+                messages.appendChild(message);
+                messages.scrollTop = messages.scrollHeight;
+
+                // Animate new message
+                gsap.from(message, {
+                    y: 10,
+                    opacity: 0,
+                    duration: 0.3,
+                    ease: 'power2.out'
+                });
+            }
+
+            function getBotResponse(userMessage) {
+                const msg = userMessage.toLowerCase();
+                
+                // Platform questions
+                if (msg.includes('realedge') || msg.includes('data') || msg.includes('ingestion')) {
+                    return BYTEEDGE_KB.platform.realedge;
+                }
+                if (msg.includes('predictedge') || msg.includes('predict') || msg.includes('maintenance')) {
+                    return BYTEEDGE_KB.platform.predictedge;
+                }
+                if (msg.includes('designedge') || msg.includes('design') || msg.includes('twin')) {
+                    return BYTEEDGE_KB.platform.designedge;
+                }
+                if (msg.includes('agenticai') || msg.includes('agent') || msg.includes('copilot')) {
+                    return BYTEEDGE_KB.platform.agenticai;
+                }
+                
+                // Industry questions
+                if (msg.includes('mobility') || msg.includes('automotive') || msg.includes('ev')) {
+                    return BYTEEDGE_KB.industries.mobility;
+                }
+                if (msg.includes('manufacturing') || msg.includes('factory') || msg.includes('production')) {
+                    return BYTEEDGE_KB.industries.manufacturing;
+                }
+                if (msg.includes('cpg') || msg.includes('packaging') || msg.includes('consumer')) {
+                    return BYTEEDGE_KB.industries.cpg;
+                }
+                if (msg.includes('energy') || msg.includes('power') || msg.includes('grid')) {
+                    return BYTEEDGE_KB.industries.energy;
+                }
+                
+                // Pilot booking
+                if (msg.includes('pilot') || msg.includes('demo') || msg.includes('book')) {
+                    document.getElementById('bookPilotModal').style.display = 'flex';
+                    return "I've opened the pilot booking form for you. Please fill in your details and we'll get back to you within 24 hours!";
+                }
+                
+                // Solutions
+                if (msg.includes('solution') || msg.includes('result') || msg.includes('success')) {
+                    return `Here are some of our proven results:\n\n${BYTEEDGE_KB.solutions.join('\n\n')}`;
+                }
+                
+                // Default responses
+                const greetings = ['hello', 'hi', 'hey'];
+                if (greetings.some(greeting => msg.includes(greeting))) {
+                    return "Hello! I'm here to help you learn about BytEdge's AI platform. Would you like to know about our platform components, industry solutions, or book a pilot?";
+                }
+                
+                return "I can help you with information about our platform (RealEdge, PredictEdge, DesignEdge, AgenticAI), industries we serve (Mobility, Manufacturing, CPG, Energy), or booking a pilot. What interests you most?";
+            }
+
+            function handleSend() {
+                const message = input.value.trim();
+                if (!message) return;
+                
+                addMessage(message, true);
+                input.value = '';
+                
+                setTimeout(() => {
+                    const response = getBotResponse(message);
+                    addMessage(response);
+                }, 500);
+            }
+
+            sendBtn.addEventListener('click', handleSend);
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleSend();
+            });
+
+            // Close chatbot when clicking outside
+            document.addEventListener('click', (e) => {
+                if (state.chatbotOpen && 
+                    !panel.contains(e.target) && 
+                    !launcher.contains(e.target)) {
+                    closeChatbot();
+                }
+            });
+        }
+
+        // Modal System
+        function initModal() {
+            const modal = document.getElementById('bookPilotModal');
+            const openBtn = document.getElementById('bookPilotBtn');
+            const closeBtn = document.getElementById('modalClose');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const form = document.getElementById('pilotForm');
+
+            function openModal() {
+                modal.style.display = 'flex';
+                gsap.fromTo(modal.querySelector('.modal-content'),
+                    { scale: 0.8, opacity: 0 },
+                    { scale: 1, opacity: 1, duration: 0.3, ease: 'power2.out' }
+                );
+            }
+
+            function closeModal() {
+                gsap.to(modal.querySelector('.modal-content'), {
+                    scale: 0.8,
+                    opacity: 0,
+                    duration: 0.3,
+                    ease: 'power2.in',
+                    onComplete: () => modal.style.display = 'none'
+                });
+            }
+
+            openBtn.addEventListener('click', openModal);
+            closeBtn.addEventListener('click', closeModal);
+            cancelBtn.addEventListener('click', closeModal);
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+                
+                // Create mailto URL
+                const subject = encodeURIComponent('Pilot Request - BytEdge.ai');
+                const body = encodeURIComponent(`
+Name: ${data.name}
+Company: ${data.company}
+Email: ${data.email}
+Phone: ${data.phone}
+
+Message:
+${data.message}
+
+Source: BytEdge.ai website
+                `.trim());
+                
+                const mailtoURL = `mailto:mayankdivakar2703@gmail.com?subject=${subject}&body=${body}`;
+                window.location.href = mailtoURL;
+                
+                closeModal();
+                form.reset();
+                
+                // Show confirmation
+                setTimeout(() => {
+                    alert('Thank you! Your pilot request has been prepared. Please send the email to complete your request.');
+                }, 500);
+            });
+        }
+
+        // Utility Functions
+        function throttle(func, limit) {
+            let inThrottle;
+            return function() {
+                const args = arguments;
+                const context = this;
+                if (!inThrottle) {
+                    func.apply(context, args);
+                    inThrottle = true;
+                    setTimeout(() => inThrottle = false, limit);
+                }
+            };
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (state.chatbotOpen) {
+                    document.getElementById('chatbotClose').click();
+                }
+                document.getElementById('modalClose').click();
+            }
+        });
+    </script>
+</body>
+</html>
