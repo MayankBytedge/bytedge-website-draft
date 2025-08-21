@@ -1314,14 +1314,14 @@ pre code {
 }
 
 .solution-card p {
-    color: var(--color-text-secondary);
+    color: #ffff;
     margin-bottom: var(--space-20);
     line-height: 1.6;
 }
 
 .solution-impact {
     background: var(--byteedge-gradient);
-    color: var(--color-text);
+    color: #000;
     padding: var(--space-16);
     border-radius: var(--radius-base);
     font-weight: var(--font-weight-semibold);
